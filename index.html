@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+<title>Pembukuan Keuangan</title>
+<style>
+  :root {
+    /* Light mode colors */
+    --color-primary: #1e90ff; /* biru muda BCA-ish */
+    --color-primary-dark: #1864b7;
+    --color-success: #28a745;
+    --color-danger: #dc3545;
+    --color-bg: #fefefe;
+    --color-text: #222;
+    --color-muted: #666;
+    --shadow-light: 0 4px 12px rgba(30, 144, 255, 0.15);
+    --transition-fast: 0.2s ease-in-out;
+  }
+
+  /* Dark mode overrides */
+  body.dark {
+    --color-primary: #74a9ff;
+    --color-primary-dark: #5286d1;
+    --color-success: #7cc67c;
+    --color-danger: #e06666;
+    --color-bg: #121c2f;
+    --color-text: #e1e9ff;
+    --color-muted: #a0aec0;
+    --shadow-light: 0 4px 12px rgba(116, 169, 255, 0.3);
+    background-color: var(--color-bg);
+  }
+
+  /* Reset & base */
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+  body {
+    margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: var(--color-bg);
+    color: var(--color-text);
+    min-height: 100vh;
+    display: flex; flex-direction: column;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
+  /* Header */
+  header {
+    background: var(--color-primary);
+    color: #fff;
+    padding: 1.5rem 1rem;
+    text-align: center;
+    font-size: 1.8rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    box-shadow: var(--shadow-light);
+    user-select: none;
+    position: relative;
+  }
+
+  /* Dark mode toggle button */
+  #darkModeToggle {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    border: 2px solid white;
+    border-radius: 20px;
+    width: 42px;
+    height: 22px;
+    cursor: pointer;
+    outline: none;
+  }
+  #darkModeToggle::before {
+    content: "";
+    display: block;
+    width: 18px;
+    height: 18px;
+    background: white;
+    border-radius: 50%;
+    margin: 1px;
+    transition: margin 0.3s ease;
+  }
+  body.dark #darkModeToggle::before {
+    margin-left: 22px;
+    background: var(--color-primary-dark);
+  }
+  #darkModeToggle:focus {
+    box-shadow: 0 0 3px 2px white;
+  }
+
+  /* Main container */
+  main {
+    flex: 1;
+    max-width: 480px;
+    width: 95%;
+    margin: 1.5rem auto 3rem;
+    padding: 1rem 1.5rem 2rem;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: var(--shadow-light);
+    display: flex;
+    flex-direction: column;
+    gap: 1.8rem;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+  body.dark main {
+    background: #1b284b;
+    color: var(--color-text);
+  }
+
+  /* Summary cards */
+  .summary {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+  .summary > div {
+    flex: 1;
+    background: #e6f0ff;
+    padding: 1rem;
+    border-radius: 10px;
+    box-shadow: 0 1px 4px rgb(30 144 255 / 0.25);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transition: background-color var(--transition-fast);
+    cursor: default;
+  }
+  .summary > div:hover {
+    background-color: #cde0ff;
+  }
+  body.dark .summary > div {
+    background: #2b3b6b;
+    box-shadow: 0 1px 6px rgba(116, 169, 255, 0.5);
+  }
+  body.dark .summary > div:hover {
+    background-color: #3a4f90;
+  }
+  .summary div span {
+    font-weight: 700;
+    font-size: 1.6rem;
+    margin-bottom: 0.15rem;
+    font-variant-numeric: tabular-nums;
+  }
+  .summary .income {
+    color: var(--color-success);
+  }
+  .summary .expense {
+    color: var(--color-danger);
+  }
+  .summary .balance {
+    font-weight: 900;
+    font-size: 1.9rem;
+    color: var(--color-primary-dark);
+  }
+  body.dark .summary .balance {
+    color: var(--color-primary);
+  }
+  .summary small {
+    font-size: 0.85rem;
+    color: var(--color-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  /* Section titles */
+  h2 {
+    font-weight: 700;
+    font-size: 1.25rem;
+    color: var(--color-primary-dark);
+    border-bottom: 2px solid var(--color-primary);
+    padding-bottom: 0.25rem;
+    margin-bottom: 0.8rem;
+    transition: color 0.3s ease;
+  }
+  body.dark h2 {
+    color: var(--color-primary);
+    border-color: var(--color-primary);
+  }
+
+  /* Form styles */
+  form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  label {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--color-primary-dark);
+    transition: color 0.3s ease;
+  }
+  body.dark label {
+    color: var(--color-primary);
+  }
+  input[type="text"], input[type="number"], input[type="date"], select {
+    padding: 0.55rem 0.8rem;
+    font-size: 1rem;
+    border-radius: 8px;
+    border: 2px solid #cfd9f9;
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background-color 0.3s ease, color 0.3s ease;
+    outline-offset: 2px;
+    outline-color: transparent;
+    font-family: inherit;
+    background: #f7faff;
+    color: #222;
+  }
+  body.dark input[type="text"], 
+  body.dark input[type="number"], 
+  body.dark input[type="date"], 
+  body.dark select {
+    background: #344d94;
+    color: var(--color-text);
+    border-color: #5579cc;
+  }
+  input[type="text"]::placeholder {
+    color: #a1b5f8;
+  }
+  body.dark input[type="text"]::placeholder {
+    color: #b9cdfd;
+  }
+  input[type="text"]:focus,
+  input[type="number"]:focus,
+  input[type="date"]:focus,
+  select:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 6px rgba(30, 144, 255, 0.6);
+    outline-color: var(--color-primary);
+    background: #f0f7ff;
+    color: var(--color-text);
+  }
+  body.dark input[type="text"]:focus,
+  body.dark input[type="number"]:focus,
+  body.dark input[type="date"]:focus,
+  body.dark select:focus {
+    background: #4e6bcb;
+    color: var(--color-text);
+  }
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none; margin: 0;
+  }
+
+  /* Button style */
+  button {
+    margin-top: 0.6rem;
+    padding: 0.75rem;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: white;
+    background: var(--color-primary);
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(30, 144, 255, 0.35);
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
+    user-select: none;
+  }
+  button:hover,
+  button:focus {
+    background: var(--color-primary-dark);
+    box-shadow: 0 6px 16px rgba(24, 100, 183, 0.7);
+    outline: none;
+  }
+
+  /* Success message */
+  .success-msg {
+    margin-top: 0.6rem;
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--color-success);
+    opacity: 0;
+    max-height: 0;
+    overflow: hidden;
+    transition: opacity 0.4s ease, max-height 0.4s ease;
+  }
+  .success-msg.visible {
+    opacity: 1;
+    max-height: 100px;
+  }
+
+  /* Quick Add Floating Button */
+  .quick-add-btn {
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    background: var(--color-primary);
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    color: white;
+    font-size: 2.8rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 6px 15px rgba(30, 144, 255, 0.5);
+    cursor: pointer;
+    user-select: none;
+    z-index: 1000;
+    transition: transform 0.2s ease;
+  }
+  .quick-add-btn:hover,
+  .quick-add-btn:focus {
+    transform: scale(1.1);
+    outline: none;
+  }
+
+  /* Quick Add Modal */
+  .modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1100;
+    backdrop-filter: blur(4px);
+  }
+  .modal.active {
+    display: flex;
+  }
+  .modal-content {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem 2rem;
+    width: 90%;
+    max-width: 360px;
+    box-shadow: 0 3px 18px rgba(0,0,0,0.25);
+    position: relative;
+    animation: fadeInScale 0.3s ease forwards;
+    color: var(--color-text);
+  }
+  body.dark .modal-content {
+    background: #1b284b;
+    color: var(--color-text);
+  }
+  @keyframes fadeInScale {
+    from {opacity: 0; transform: scale(0.85);}
+    to {opacity: 1; transform: scale(1);}
+  }
+  .modal-content h3 {
+    margin-top: 0;
+    margin-bottom: 1.2rem;
+    font-weight: 800;
+    color: var(--color-primary);
+    text-align: center;
+    letter-spacing: 0.05em;
+  }
+  .modal-close {
+    position: absolute;
+    top: 12px;
+    right: 14px;
+    background: transparent;
+    border: none;
+    font-size: 1.7rem;
+    color: #666;
+    cursor: pointer;
+    transition: color 0.3s ease;
+  }
+  body.dark .modal-close {
+    color: var(--color-muted);
+  }
+  .modal-close:hover,
+  .modal-close:focus {
+    color: var(--color-primary-dark);
+    outline: none;
+  }
+
+  .summary {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin: 20px 0;
+}
+.card {
+  flex: 1;
+  text-align: center;
+  padding: 20px;
+  border-radius: 20px;
+  backdrop-filter: blur(12px);
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+  color: white;
+  font-weight: bold;
+}
+.income { border: 2px solid #4caf50; }
+.expense { border: 2px solid #f44336; }
+.balance { border: 2px solid #2196f3; }
+
+.number {
+  font-size: 1.8rem;
+  display: block;
+  margin-bottom: 5px;
+}
+.loading {
+  animation: pulse 1.5s infinite ease-in-out;
+}
+@keyframes pulse {
+  0% { opacity: 0.4; }
+  50% { opacity: 1; }
+  100% { opacity: 0.4; }
+}
+
+.summary > div {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.saldo-terserah {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  padding: 10px;
+  border-radius: 10px;
+  background-color: white;
+  color: #1864b7;
+  box-shadow: 0 2px 10px rgba(24, 100, 183, 0.3);
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: opacity 0.4s ease, transform 0.4s ease, background-color 0.3s ease, color 0.3s ease;
+  pointer-events: none; /* agar teks gak ganggu interaksi */
+}
+
+/* Saat ada teks (aktif), tampilkan dengan animasi */
+.saldo-terserah.active {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+/* Dark mode (body.dark) - background dan warna teks kontras */
+body.dark .saldo-terserah {
+  background-color: #23305a;
+  color: #a0c4ff;
+  box-shadow: 0 2px 12px rgba(160, 196, 255, 0.6);
+}
+
+
+@media (max-width: 480px) {
+  .summary {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .summary > div {
+    width: 100%;
+  }
+  header {
+    padding: 1rem 0.5rem;
+    font-size: 1.5rem;
+  }
+}
+
+
+  /* Responsive */
+  @media (max-width: 520px) {
+    main {
+      padding: 1rem 1rem 2rem;
+      width: 95vw;
+      max-width: none;
+      margin: 1rem auto 2rem;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    h2 {
+      font-size: 1.15rem;
+    }
+    button {
+      font-size: 1.05rem;
+      padding: 0.7rem;
+    }
+    .quick-add-btn {
+      width: 54px;
+      height: 54px;
+      font-size: 2.4rem;
+      bottom: 1rem;
+      right: 1rem;
+    }
+  }
+</style>
+</head>
+<body>
+<header>
+  Pembukuan Keuangan
+  <button id="darkModeToggle" aria-label="Toggle mode gelap/terang" title="Toggle Dark Mode"></button>
+</header>
+<main>
+
+  <div id="saldoInfo" style="font-size: 0.9rem; font-weight: 600; color: var(--color-primary); margin-bottom: 0.5rem; display:none;">
+  Saldo metode pembayaran: Rp 0
+  </div>
+  
+ <section class="summary" aria-label="Ringkasan keuangan">
+  <div class="card income">
+    <span id="totalIncome" class="number loading">⏳</span>
+    <small>Pemasukan</small>
+  </div>
+  <div class="card expense">
+    <span id="totalExpense" class="number loading">⏳</span>
+    <small>Pengeluaran</small>
+  </div>
+  <div class="card balance">
+    <span id="balance" class="number loading">⏳</span>
+    <small>Saldo</small>
+  </div>
+  </section>
+
+  <section>
+    <h2>Input Transaksi Lengkap</h2>
+    <form id="fullForm" aria-label="Form input transaksi lengkap">
+      <label for="date">Tanggal Transaksi</label>
+      <input type="date" id="date" name="date" required autocomplete="off" />
+
+      <label for="type">Jenis Transaksi</label>
+      <select id="type" name="type" required autocomplete="off">
+        <option value="" disabled selected>Pilih jenis transaksi</option>
+        <option value="pemasukan">Pemasukan</option>
+        <option value="pengeluaran">Pengeluaran</option>
+      </select>
+
+    <label for="category">Kategori Dana</label>
+    <div id="saldoTersedia" class="saldo-terserah"></div> <!-- tempat saldo muncul -->
+    <select id="category" name="category" required autocomplete="off" >
+      <option value="" disabled selected>Pilih kategori dana</option>
+      <option value="bca">BCA</option>
+      <option value="mandiri">Mandiri</option>
+      <option value="cash">Cash</option>
+    </select>
+
+      <label for="desc">Deskripsi (opsional)</label>
+      <input type="text" id="desc" name="desc" placeholder="Misal: Bayar listrik" autocomplete="off" />
+
+      <label for="amount">Nominal (Rp)</label>
+      <input type="text" id="amount" name="amount" required autocomplete="off" />
+
+
+      <button type="submit" aria-live="polite">Simpan Transaksi</button>
+      <div class="success-msg" id="successMsg" role="alert" aria-live="assertive" aria-atomic="true">Transaksi berhasil disimpan!</div>
+    </form>
+  </section>
+</main>
+
+<!-- Quick Add Floating Button -->
+<button class="quick-add-btn" title="Quick Add Transaksi" aria-label="Tambah transaksi cepat" id="quickAddBtn" type="button">+</button>
+
+<!-- Quick Add Modal -->
+<div class="modal" id="quickAddModal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="quickAddTitle">
+  <div class="modal-content">
+    <button class="modal-close" aria-label="Tutup" id="quickAddCloseBtn" type="button">&times;</button>
+    <h3 id="quickAddTitle">Quick Add Transaksi</h3>
+    <form id="quickAddForm" aria-label="Form quick add transaksi">
+      <label for="qtype">Jenis Transaksi</label>
+      <select id="qtype" name="qtype" required autocomplete="off" >
+        <option value="" disabled selected>Pilih jenis transaksi</option>
+        <option value="pemasukan">Pemasukan</option>
+        <option value="pengeluaran">Pengeluaran</option>
+      </select>
+
+     <!-- Di dalam <div class="modal-content"> Quick Add -->
+      <div id="quickSaldoTersedia" class="saldo-terserah"></div>
+
+      <label for="qcategory">Kategori Dana</label>
+      <select id="qcategory" name="qcategory" required autocomplete="off">
+        <option value="" disabled selected>Pilih kategori dana</option>
+        <option value="bca">BCA</option>
+        <option value="mandiri">Mandiri</option>
+        <option value="cash">Cash</option>
+      </select>
+
+
+    <label for="qamount">Nominal (Rp)</label>
+    <input type="text" id="qamount" name="qamount" required autocomplete="off" />
+
+
+      <button type="submit" aria-live="polite">Tambah Cepat</button>
+      <div class="success-msg" id="quickSuccessMsg" role="alert" aria-live="assertive" aria-atomic="true">Transaksi berhasil ditambahkan!</div>
+    </form>
+  </div>
+</div>
+
+<script>
+  // Elemen UI
+  const darkModeToggle = document.getElementById('darkModeToggle');
+  const body = document.body;
+  const dateInput = document.getElementById('date');
+  const fullForm = document.getElementById('fullForm');
+  const quickAddBtn = document.getElementById('quickAddBtn');
+  const quickAddModal = document.getElementById('quickAddModal');
+  const quickAddCloseBtn = document.getElementById('quickAddCloseBtn');
+  const quickAddForm = document.getElementById('quickAddForm');
+  const successMsg = document.getElementById('successMsg');
+  const quickSuccessMsg = document.getElementById('quickSuccessMsg');
+
+  // URL Web App Google Apps Script
+const API_URL = "https://script.google.com/macros/s/AKfycbxCk6qKxikaP6Fn-YI17fwsn539_M0d83RX0_Bi6onDAvv14YMnEH-tV0bbPT2FjrQoeQ/exec";
+
+function fetchSummary() {
+  fetch(API_URL)
+    .then(res => res.json())
+    .then(data => {
+      animateNumber("totalIncome", data.totalIncome);
+      animateNumber("totalExpense", data.totalExpense);
+      animateNumber("balance", data.balance);
+    })
+    .catch(err => console.error(err));
+}
+
+function animateNumber(id, target) {
+  const el = document.getElementById(id);
+  el.classList.remove("loading");
+  let current = 0;
+  const step = Math.ceil(target / 50);
+  const timer = setInterval(() => {
+    current += step;
+    if (current >= target) {
+      current = target;
+      clearInterval(timer);
+    }
+    el.textContent = current.toLocaleString("id-ID");
+  }, 20);
+}
+
+fetchSummary();
+
+  // Set tanggal default hari ini
+  dateInput.valueAsDate = new Date();
+
+  // State transaksi
+  let totalIncome = 0;
+  let totalExpense = 0;
+  let balance = 0;
+
+  function updateSummary() {
+    document.getElementById('totalIncome').textContent = totalIncome.toLocaleString('id-ID');
+    document.getElementById('totalExpense').textContent = totalExpense.toLocaleString('id-ID');
+    document.getElementById('balance').textContent = balance.toLocaleString('id-ID');
+  }
+
+  function showSuccess(elem) {
+    elem.classList.add('visible');
+    setTimeout(() => elem.classList.remove('visible'), 2500);
+  }
+
+  function saveTransaction(data) {
+  fetch("https://pembukuan-three.vercel.app/api/send-transaction", { // URL Web App dari Apps Script
+    method: "POST",
+    body: JSON.stringify(data),
+    headers: {
+      "Content-Type": "application/json"
+    }
+  })
+  .then(res => res.json())
+  .then(response => {
+    console.log("Berhasil:", response);
+    if (data.type === 'pemasukan') {
+      totalIncome += data.amount;
+    } else if (data.type === 'pengeluaran') {
+      totalExpense += data.amount;
+    }
+    balance = totalIncome - totalExpense;
+    updateSummary();
+  })
+  .catch(err => console.error("Gagal:", err));
+
+  console.log(data);
+  }
+
+  const categorySelect = document.getElementById('category');
+  categorySelect.addEventListener('change', function() {
+    const metodeTerpilih = this.value.toLowerCase();
+    tampilkanSaldoMetode(metodeTerpilih);
+  });
+
+
+  function tampilkanSaldoMetode(metode) {
+  const saldoElem = document.getElementById('saldoTersedia');
+  if (!saldoElem) return;
+
+  if (metode && saldoPerMetode.hasOwnProperty(metode)) {
+    saldoElem.textContent = `Saldo tersedia: Rp ${parseInt(saldoPerMetode[metode]).toLocaleString('id-ID')}`;
+    saldoElem.classList.add('active');
+  } else {
+    saldoElem.textContent = '';
+    saldoElem.classList.remove('active');
+  }
+}
+
+  let saldoPerMetode = {};  // variabel global simpan saldo per metode
+
+  // Fetch Data Ringkasan
+  async function ambilRingkasan() {
+    try {
+      const url = "https://script.google.com/macros/s/AKfycbxCk6qKxikaP6Fn-YI17fwsn539_M0d83RX0_Bi6onDAvv14YMnEH-tV0bbPT2FjrQoeQ/exec";
+      const res = await fetch(url);
+      const data = await res.json();
+
+      // Update ringkasan utama
+      document.getElementById("totalIncome").textContent = data.totalIncome.toLocaleString("id-ID");
+      document.getElementById("totalExpense").textContent = data.totalExpense.toLocaleString("id-ID");
+      document.getElementById("balance").textContent = data.balance.toLocaleString("id-ID");
+
+      // Simpan saldoPerMetode ke variabel global
+      saldoPerMetode = data.saldoPerMetode || {};
+    } catch (error) {
+      console.error("Gagal mengambil ringkasan:", error);
+    }
+  }
+// Ambil data saat halaman pertama kali dimuat
+document.addEventListener("DOMContentLoaded", ambilRingkasan);
+
+// Jalankan saat halaman selesai dimuat
+document.addEventListener("DOMContentLoaded", ambilRingkasan);
+
+
+fullForm.addEventListener('submit', e => {
+  e.preventDefault();
+
+  const rawAmount = fullForm.amount.value.replace(/[^0-9]/g, '');
+  const amount = parseInt(rawAmount, 10);
+
+  if (!amount || isNaN(amount)) {
+    alert("Nominal harus diisi dengan angka yang valid!");
+    return;
+  }
+
+  const data = {
+    date: fullForm.date.value,
+    type: fullForm.type.value,
+    category: fullForm.category.value,
+    desc: fullForm.desc.value,
+    amount: amount,
+  };
+
+  saveTransaction(data);
+  fullForm.reset();
+  dateInput.valueAsDate = new Date();
+  showSuccess(successMsg);
+});
+
+
+  // Quick Add modal toggle
+  quickAddBtn.addEventListener('click', () => {
+    quickAddModal.classList.add('active');
+    quickAddModal.setAttribute('aria-hidden', 'false');
+    // fokus di elemen pertama form
+    quickAddForm.qtype.focus();
+  });
+  quickAddCloseBtn.addEventListener('click', () => {
+    quickAddModal.classList.remove('active');
+    quickAddModal.setAttribute('aria-hidden', 'true');
+  });
+  quickAddModal.addEventListener('click', e => {
+    if (e.target === quickAddModal) {
+      quickAddModal.classList.remove('active');
+      quickAddModal.setAttribute('aria-hidden', 'true');
+    }
+  });
+
+  // Quick Add form submit
+quickAddForm.addEventListener('submit', e => {
+  e.preventDefault();
+
+  const rawAmount = quickAddForm.qamount.value.replace(/[^0-9]/g, '');
+  const amount = parseInt(rawAmount, 10);
+
+  if (!amount || isNaN(amount)) {
+    alert("Nominal harus diisi dengan angka yang valid!");
+    return;
+  }
+
+  const data = {
+    date: new Date().toISOString().split('T')[0], // tanggal hari ini
+    type: quickAddForm.qtype.value,
+    category: quickAddForm.qcategory.value,
+    desc: '',
+    amount: amount,
+  };
+
+  saveTransaction(data);
+
+  quickAddForm.reset();
+  showSuccess(quickSuccessMsg);
+
+  setTimeout(() => {
+    quickAddModal.classList.remove('active');
+    quickAddModal.setAttribute('aria-hidden', 'true');
+  }, 1200);
+});
+
+function tampilkanSaldoMetodeQuickAdd(metode) {
+  const saldoElem = document.getElementById('quickSaldoTersedia');
+  if (!saldoElem) return;
+
+  if (metode && saldoPerMetode.hasOwnProperty(metode)) {
+    saldoElem.textContent = `Saldo tersedia: Rp ${parseInt(saldoPerMetode[metode]).toLocaleString('id-ID')}`;
+    saldoElem.classList.add('active');
+  } else {
+    saldoElem.textContent = '';
+    saldoElem.classList.remove('active');
+  }
+}
+
+const qcategorySelect = document.getElementById('qcategory');
+qcategorySelect.addEventListener('change', function() {
+  const metodeTerpilih = this.value.toLowerCase();
+  tampilkanSaldoMetodeQuickAdd(metodeTerpilih);
+});
+
+
+  // Toggle Dark Mode & simpan ke localStorage
+  darkModeToggle.addEventListener('click', () => {
+    body.classList.toggle('dark');
+    if(body.classList.contains('dark')) {
+      localStorage.setItem('darkMode', 'enabled');
+    } else {
+      localStorage.removeItem('darkMode');
+    }
+  });
+
+  // Load preferensi dark mode dari localStorage
+  if(localStorage.getItem('darkMode') === 'enabled') {
+    body.classList.add('dark');
+  }
+
+  updateSummary();
+
+  function formatRupiahInput(input) {
+  input.addEventListener('input', function(e) {
+    let value = e.target.value.replace(/[^0-9]/g, '');
+    if (!value) {
+      e.target.value = '';
+      return;
+    }
+    e.target.value = formatRupiah(value, 'Rp ');
+  });
+}
+
+const amountInput = document.getElementById('amount');
+const qamountInput = document.getElementById('qamount');
+
+if (amountInput) formatRupiahInput(amountInput);
+if (qamountInput) formatRupiahInput(qamountInput);
+
+// Format jadi Rp saat ketik
+amountInput.addEventListener('input', function (e) {
+  let value = e.target.value.replace(/[^0-9]/g, '');
+  if (!value) {
+    e.target.value = '';
+    return;
+  }
+  e.target.value = formatRupiah(value, 'Rp ');
+});
+
+
+// Kirim ke Apps Script
+document.getElementById('fullForm').addEventListener('submit', function(e) {
+  e.preventDefault();
+
+  const amountInput = document.getElementById('amount');
+  
+  // Buang semua karakter selain angka
+  const rawAmount = amountInput.value.replace(/[^0-9]/g, '');
+
+  const data = {
+    date: document.getElementById('date').value,
+    type: document.getElementById('type').value,
+    category: document.getElementById('category').value,
+    desc: document.getElementById('desc').value,
+    amount: rawAmount // kirim angka murni
+  };
+
+  fetch('https://script.google.com/macros/s/AKfycbxCk6qKxikaP6Fn-YI17fwsn539_M0d83RX0_Bi6onDAvv14YMnEH-tV0bbPT2FjrQoeQ/exec', {
+    method: 'POST',
+    body: JSON.stringify(data),
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  })
+  .then(res => res.json())
+  .then(result => {
+    console.log('Berhasil:', result);
+  })
+  .catch(err => {
+    console.error('Error:', err);
+  });
+});
+
+// Fungsi format rupiah
+function formatRupiah(angka) {
+  return "Rp " + angka.toLocaleString("id-ID");
+}
+
+function showLoadingOption(selectId) {
+  const select = document.getElementById(selectId);
+  if (!select) return;
+
+  select.innerHTML = "";
+  const loadingOption = document.createElement("option");
+  loadingOption.textContent = "Memuat...";
+  loadingOption.disabled = true;
+  loadingOption.selected = true;
+  select.appendChild(loadingOption);
+}
+
+function renderMetodeDana(saldoPerMetode, selectId, saldoContainerId) {
+  const select = document.getElementById(selectId);
+  if (!select) return;
+
+  select.innerHTML = "";
+
+  const defaultOption = document.createElement("option");
+  defaultOption.value = "";
+  defaultOption.textContent = "Pilih kategori dana";
+  defaultOption.disabled = true;
+  defaultOption.selected = true;
+  select.appendChild(defaultOption);
+
+  Object.keys(saldoPerMetode).forEach(method => {
+    const option = document.createElement("option");
+    option.value = method;
+    option.textContent = formatMetodeName(method);
+    select.appendChild(option);
+  });
+
+  const container = document.getElementById(saldoContainerId);
+  if (container) {
+    container.innerHTML = "";
+    Object.keys(saldoPerMetode).forEach(method => {
+      const saldo = saldoPerMetode[method];
+      const div = document.createElement("div");
+      div.classList.add("saldo-item");
+      div.innerHTML = `<strong>${formatMetodeName(method)}</strong>: ${formatRupiah(saldo)}`;
+      container.appendChild(div);
+    });
+  }
+}
+
+function formatMetodeName(method) {
+  return method.charAt(0).toUpperCase() + method.slice(1);
+}
+
+function formatRupiah(number) {
+  return "Rp" + number.toLocaleString("id-ID");
+}
+
+// Tampilkan loading dulu
+showLoadingOption("qcategory");
+showLoadingOption("category");
+
+// Ambil data dari API
+fetch("https://script.google.com/macros/s/AKfycbxCk6qKxikaP6Fn-YI17fwsn539_M0d83RX0_Bi6onDAvv14YMnEH-tV0bbPT2FjrQoeQ/exec")
+  .then(res => res.json())
+  .then(data => {
+    renderMetodeDana(data.saldoPerMetode, "qcategory", "quickSaldoTersedia");
+    renderMetodeDana(data.saldoPerMetode, "category", "saldoTersedia");
+  });
+
+  function formatRupiah(angka, prefix) {
+  let number_string = angka.toString(),
+      sisa = number_string.length % 3,
+      rupiah = number_string.substr(0, sisa),
+      ribuan = number_string.substr(sisa).match(/\d{3}/gi);
+
+  if (ribuan) {
+    let separator = sisa ? '.' : '';
+    rupiah += separator + ribuan.join('.');
+  }
+  return prefix + rupiah;
+}
+</script>
+</body>
+</html>
