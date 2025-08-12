@@ -600,6 +600,98 @@ body.dark .saldo-terserah {
 }
 
 
+/* Floating Button */
+.floating-btn {
+  position: fixed;
+  bottom: 6rem;
+  right: 5vw;
+  background: #ff6a00;
+  color: white;
+  font-size: 20px;
+  border: none;
+  padding: 15px;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+}
+
+/* Modal */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 10;
+  padding-top: 100px;
+  left: 0; top: 0;
+  width: 100%; height: 100%;
+  background-color: rgba(0,0,0,0.5);
+}
+.modal-content {
+  background: var(--bg, white);
+  margin: auto;
+  padding: 20px;
+  border-radius: 10px;
+  width: 300px;
+}
+.close { float: right; font-size: 20px; cursor: pointer; }
+
+/* Popup Sukses */
+.popup {
+  display: none;
+  position: fixed;
+  z-index: 20;
+  left: 0; top: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.6);
+}
+.popup-content {
+  background: var(--bg, white);
+  color: var(--text, black);
+  margin: auto;
+  margin-top: 20%;
+  padding: 20px;
+  border-radius: 10px;
+  width: 250px;
+  text-align: center;
+  animation: fadeIn 0.3s ease;
+}
+@keyframes fadeIn { from {opacity:0} to {opacity:1} }
+
+/* Checkmark Animation */
+.checkmark {
+  width: 56px; height: 56px;
+  stroke-width: 2;
+  stroke: #4caf50;
+  fill: none;
+  margin: auto;
+  stroke-dasharray: 166;
+  stroke-dashoffset: 166;
+  animation: stroke 0.6s cubic-bezier(.65,.0,.45,1) forwards;
+}
+@keyframes stroke {
+  100% { stroke-dashoffset: 0; }
+}
+
+.saldo-info {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  padding: 10px;
+  border-radius: 10px;
+  background-color: white;
+  color: #1864b7;
+  box-shadow: 0 2px 10px rgba(24, 100, 183, 0.3);
+  pointer-events: none; /* agar teks gak ganggu interaksi */
+}
+/* Dark mode (body.dark) - background dan warna teks kontras */
+body.dark .saldo-info {
+  background-color: #23305a;
+  color: #a0c4ff;
+  box-shadow: 0 2px 12px rgba(160, 196, 255, 0.6);
+}
+.saldo-info.active {
+  background: linear-gradient(to right, #4caf50, #8bc34a);
+  color: white;
+}
+
   /* Responsive */
   @media (max-width: 520px) {
     main {
@@ -754,6 +846,54 @@ body.dark .saldo-terserah {
   </div>
 </div>
 
+<!-- Floating Button Transfer -->
+<button id="transferBtn" class="floating-btn">⇄</button>
+
+<!-- Modal Transfer -->
+<div id="transferModal" class="modal">
+  <div class="modal-content">
+    <span class="close">&times;</span>
+    <h2>Transfer Antar Sumber Dana</h2>
+    <form id="transferForm">
+      
+    <label for="from">Dari</label>
+    <div class="saldo-info" id="saldoFrom">Memuat...</div>
+    <select id="from" name="from" required>
+      <option value="">Memuat sumber dana...</option>
+    </select>
+
+    <label for="to">Ke</label>
+    <div class="saldo-info" id="saldoTo">Memuat...</div>
+    <select id="to" name="to" required>
+      <option value="">Memuat sumber dana...</option>
+    </select>
+
+
+      <label>Jumlah:</label>
+      <input type="number" name="amount" min="1" required />
+
+      <button type="submit">Transfer</button>
+    </form>
+  </div>
+</div>
+
+
+<!-- Popup Sukses -->
+<div class="popup" id="transferPopup">
+  <div class="popup-content">
+    <svg class="checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
+      <circle class="checkmark-circle" cx="26" cy="26" r="25" fill="none"/>
+      <path class="checkmark-check" fill="none" d="M14 27l7 7 16-16"/>
+    </svg>
+    <h2>Transfer Berhasil!</h2>
+    <p id="transferDetails"></p>
+    <button id="transferPopupClose">Selesai</button>
+  </div>
+</div>
+
+<!-- Chart.js & Plugin -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-doughnutlabel@1.0.3"></script>
 <script>
   // Elemen UI
   const darkModeToggle = document.getElementById('darkModeToggle');
@@ -768,7 +908,7 @@ body.dark .saldo-terserah {
   const quickSuccessMsg = document.getElementById('quickSuccessMsg');
 
   // URL Web App Google Apps Script
-const API_URL = "https://script.google.com/macros/s/AKfycbxCk6qKxikaP6Fn-YI17fwsn539_M0d83RX0_Bi6onDAvv14YMnEH-tV0bbPT2FjrQoeQ/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbyDL9wt6-HzHwUoXepDH-91tiwtoPDh1WvmMxk2NfLLiPXgnUAt2TEvcFl-R1zvqn0bhg/exec";
 
 function fetchSummary() {
   fetch(API_URL)
@@ -866,7 +1006,7 @@ fetchSummary();
   // Fetch Data Ringkasan
   async function ambilRingkasan() {
     try {
-      const url = "https://script.google.com/macros/s/AKfycbxCk6qKxikaP6Fn-YI17fwsn539_M0d83RX0_Bi6onDAvv14YMnEH-tV0bbPT2FjrQoeQ/exec";
+      const url = "https://script.google.com/macros/s/AKfycbyDL9wt6-HzHwUoXepDH-91tiwtoPDh1WvmMxk2NfLLiPXgnUAt2TEvcFl-R1zvqn0bhg/exec";
       const res = await fetch(url);
       const data = await res.json();
 
@@ -1107,7 +1247,7 @@ document.getElementById('fullForm').addEventListener('submit', function(e) {
     amount: rawAmount // kirim angka murni
   };
 
-  fetch('https://script.google.com/macros/s/AKfycbxCk6qKxikaP6Fn-YI17fwsn539_M0d83RX0_Bi6onDAvv14YMnEH-tV0bbPT2FjrQoeQ/exec', {
+  fetch('https://script.google.com/macros/s/AKfycbyDL9wt6-HzHwUoXepDH-91tiwtoPDh1WvmMxk2NfLLiPXgnUAt2TEvcFl-R1zvqn0bhg/exec', {
     method: 'POST',
     body: JSON.stringify(data),
     headers: {
@@ -1186,7 +1326,7 @@ showLoadingOption("qcategory");
 showLoadingOption("category");
 
 // Ambil data dari API
-fetch("https://script.google.com/macros/s/AKfycbxCk6qKxikaP6Fn-YI17fwsn539_M0d83RX0_Bi6onDAvv14YMnEH-tV0bbPT2FjrQoeQ/exec")
+fetch("https://script.google.com/macros/s/AKfycbyDL9wt6-HzHwUoXepDH-91tiwtoPDh1WvmMxk2NfLLiPXgnUAt2TEvcFl-R1zvqn0bhg/exec")
   .then(res => res.json())
   .then(data => {
     renderMetodeDana(data.saldoPerMetode, "qcategory", "quickSaldoTersedia");
@@ -1204,6 +1344,149 @@ fetch("https://script.google.com/macros/s/AKfycbxCk6qKxikaP6Fn-YI17fwsn539_M0d83
     rupiah += separator + ribuan.join('.');
   }
   return prefix + rupiah;
+}
+
+
+document.getElementById("transferBtn").onclick = () => {
+  document.getElementById("transferModal").style.display = "block";
+};
+document.querySelector(".close").onclick = () => {
+  document.getElementById("transferModal").style.display = "none";
+};
+
+document.getElementById("transferForm").onsubmit = async function(e) {
+  e.preventDefault();
+
+  const from = this.from.value;
+  const to = this.to.value;
+  const amount = parseFloat(this.amount.value);
+
+  if (from === to) {
+    alert("Sumber dana asal dan tujuan tidak boleh sama!");
+    return;
+  }
+
+  // ✅ Buat tanggal hari ini (format YYYY-MM-DD)
+  const today = new Date().toISOString().split("T")[0];
+
+  try {
+    const res = await fetch("https://pembukuan-three.vercel.app/api/send-transaction", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        type: "transfer",   // ✅ beri tanda ini transfer
+        date: today,        // ✅ isi tanggal
+        from,
+        to,
+        amount
+      })
+    });
+
+    const data = await res.json();
+    if (data.success) {
+      document.getElementById("transferModal").style.display = "none";
+      document.getElementById("transferDetails").innerText =
+        `Rp ${amount.toLocaleString()} dari ${from.toUpperCase()} ke ${to.toUpperCase()}`;
+      const popup = document.getElementById("transferPopup");
+      popup.style.display = "flex";
+      setTimeout(() => popup.style.display = "none", 3000);
+    } else {
+      alert("Gagal transfer!");
+    }
+  } catch (err) {
+    console.error(err);
+    alert("Error koneksi ke server!");
+  }
+};
+
+document.getElementById("transferPopupClose").onclick = () => {
+  document.getElementById("transferPopup").style.display = "none";
+};
+
+
+let balanceData = {}; // untuk menyimpan saldo per metode
+
+async function loadData() {
+  const res = await fetch('https://script.google.com/macros/s/AKfycbyDL9wt6-HzHwUoXepDH-91tiwtoPDh1WvmMxk2NfLLiPXgnUAt2TEvcFl-R1zvqn0bhg/exec');
+  const data = await res.json();
+
+  // Simpan saldo per metode ke variabel global
+  balanceData = data.saldoPerMetode;
+
+  // Isi dropdown sumber dana
+  const selects = [document.getElementById('from'), document.getElementById('to')];
+  selects.forEach(select => {
+    select.innerHTML = '<option value="">Pilih Sumber Dana</option>';
+    data.sumberDana.forEach(dana => {
+      const opt = document.createElement('option');
+      opt.value = dana.toLowerCase();
+      opt.textContent = dana;
+      select.appendChild(opt);
+    });
+  });
+}
+
+// Fungsi animasi saldo
+function animateSaldo(elementId, target) {
+  const el = document.getElementById(elementId);
+  const duration = 800; // ms
+  const start = parseInt(el.dataset.value || 0);
+  const startTime = performance.now();
+
+  function update(currentTime) {
+    const progress = Math.min((currentTime - startTime) / duration, 1);
+    const value = Math.floor(start + (target - start) * progress);
+    el.textContent = `Saldo: Rp ${value.toLocaleString()}`;
+    if (progress < 1) {
+      requestAnimationFrame(update);
+    } else {
+      el.dataset.value = target;
+      el.classList.add("active");
+      setTimeout(() => el.classList.remove("active"), 800);
+    }
+  }
+  requestAnimationFrame(update);
+}
+
+// Event listener untuk dropdown
+document.getElementById("from").addEventListener("change", function() {
+  const selected = this.value;
+  if (selected && balanceData[selected] !== undefined) {
+    animateSaldo("saldoFrom", balanceData[selected]);
+  } else {
+    document.getElementById("saldoFrom").textContent = "Saldo: -";
+  }
+});
+
+document.getElementById("to").addEventListener("change", function() {
+  const selected = this.value;
+  if (selected && balanceData[selected] !== undefined) {
+    animateSaldo("saldoTo", balanceData[selected]);
+  } else {
+    document.getElementById("saldoTo").textContent = "Saldo: -";
+  }
+});
+
+document.addEventListener('DOMContentLoaded', loadData);
+
+// Misalnya ini dijalankan setelah data sumber dana sudah diambil
+function populateSelectOptions(options) {
+  const fromSelect = document.getElementById("from");
+  const toSelect = document.getElementById("to");
+
+  // Kosongkan dulu option sebelumnya
+  fromSelect.innerHTML = '<option value="">Pilih Sumber Dana</option>';
+  toSelect.innerHTML = '<option value="">Pilih Sumber Dana</option>';
+
+  options.forEach(opt => {
+    const optionEl = new Option(opt.label, opt.value);
+    fromSelect.add(optionEl.cloneNode(true));
+    toSelect.add(optionEl);
+  });
+
+  // Setelah selesai load, reset saldo info
+  document.getElementById("saldoFrom").textContent = "Saldo: -";
+  document.getElementById("saldoTo").textContent = "Saldo: -";
 }
 </script>
 </body>
