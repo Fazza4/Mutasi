@@ -869,10 +869,10 @@ body.dark .saldo-info {
     </select>
 
 
-      <label>Jumlah:</label>
-      <input type="number" name="amount" min="1" required />
+    <label>Jumlah:</label>
+    <input type="text" name="amount" inputmode="numeric" placeholder="Masukkan jumlah" required>
 
-      <button type="submit">Transfer</button>
+    <button type="submit">Transfer</button>
     </form>
   </div>
 </div>
@@ -895,6 +895,16 @@ body.dark .saldo-info {
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-doughnutlabel@1.0.3"></script>
 <script>
+const originalFetch = window.fetch;
+window.fetch = function(...args) {
+  if (args[0].includes("https://pembukuan-three.vercel.app/api/send-transaction")) {
+    console.log("DEBUG: fetch dipanggil ke /api/send-transaction", args);
+    console.trace("DEBUG: Stack trace fetch");
+  }
+  return originalFetch.apply(this, args);
+};
+
+  
   // Elemen UI
   const darkModeToggle = document.getElementById('darkModeToggle');
   const body = document.body;
@@ -908,7 +918,7 @@ body.dark .saldo-info {
   const quickSuccessMsg = document.getElementById('quickSuccessMsg');
 
   // URL Web App Google Apps Script
-const API_URL = "https://script.google.com/macros/s/AKfycbyDL9wt6-HzHwUoXepDH-91tiwtoPDh1WvmMxk2NfLLiPXgnUAt2TEvcFl-R1zvqn0bhg/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbyh_WfkgN-Qa0t447u_bU6mwDKiPqbtQkapJOyHKeuTT4loYvLJ7MY5RMzNXpCK20ED7g/exec";
 
 function fetchSummary() {
   fetch(API_URL)
@@ -1006,7 +1016,7 @@ fetchSummary();
   // Fetch Data Ringkasan
   async function ambilRingkasan() {
     try {
-      const url = "https://script.google.com/macros/s/AKfycbyDL9wt6-HzHwUoXepDH-91tiwtoPDh1WvmMxk2NfLLiPXgnUAt2TEvcFl-R1zvqn0bhg/exec";
+      const url = "https://script.google.com/macros/s/AKfycbyh_WfkgN-Qa0t447u_bU6mwDKiPqbtQkapJOyHKeuTT4loYvLJ7MY5RMzNXpCK20ED7g/exec";
       const res = await fetch(url);
       const data = await res.json();
 
@@ -1239,6 +1249,15 @@ document.getElementById('fullForm').addEventListener('submit', function(e) {
   // Buang semua karakter selain angka
   const rawAmount = amountInput.value.replace(/[^0-9]/g, '');
 
+  // Cek field wajib
+  if (!document.getElementById('date').value ||
+      !document.getElementById('type').value ||
+      !document.getElementById('category').value ||
+      !rawAmount) {
+    console.warn("Form fullForm kosong, tidak dikirim");
+    return; // stop kirim kalau data tidak lengkap
+  }
+
   const data = {
     date: document.getElementById('date').value,
     type: document.getElementById('type').value,
@@ -1247,7 +1266,7 @@ document.getElementById('fullForm').addEventListener('submit', function(e) {
     amount: rawAmount // kirim angka murni
   };
 
-  fetch('https://script.google.com/macros/s/AKfycbyDL9wt6-HzHwUoXepDH-91tiwtoPDh1WvmMxk2NfLLiPXgnUAt2TEvcFl-R1zvqn0bhg/exec', {
+  fetch('https://pembukuan-three.vercel.app/api/send-transaction', {
     method: 'POST',
     body: JSON.stringify(data),
     headers: {
@@ -1256,7 +1275,13 @@ document.getElementById('fullForm').addEventListener('submit', function(e) {
   })
   .then(res => res.json())
   .then(result => {
+    if (result.success) {
     console.log('Berhasil:', result);
+    // tampilkan notifikasi sukses / reset form
+    } else {
+    console.warn('Gagal:', result);
+    alert(result.message || 'Gagal menyimpan transaksi');
+    }
   })
   .catch(err => {
     console.error('Error:', err);
@@ -1326,7 +1351,7 @@ showLoadingOption("qcategory");
 showLoadingOption("category");
 
 // Ambil data dari API
-fetch("https://script.google.com/macros/s/AKfycbyDL9wt6-HzHwUoXepDH-91tiwtoPDh1WvmMxk2NfLLiPXgnUAt2TEvcFl-R1zvqn0bhg/exec")
+fetch("https://script.google.com/macros/s/AKfycbyh_WfkgN-Qa0t447u_bU6mwDKiPqbtQkapJOyHKeuTT4loYvLJ7MY5RMzNXpCK20ED7g/exec")
   .then(res => res.json())
   .then(data => {
     renderMetodeDana(data.saldoPerMetode, "qcategory", "quickSaldoTersedia");
@@ -1354,15 +1379,39 @@ document.querySelector(".close").onclick = () => {
   document.getElementById("transferModal").style.display = "none";
 };
 
+// Format otomatis Rupiah saat mengetik
+const transferAmountInput = document.querySelector("#transferForm input[name='amount']");
+transferAmountInput.addEventListener("input", function () {
+  let raw = this.value.replace(/\D/g, ""); // hapus semua non-angka
+  if (!raw) {
+    this.value = "";
+    return;
+  }
+  this.value = "Rp " + new Intl.NumberFormat("id-ID").format(raw);
+});
+
+
 document.getElementById("transferForm").onsubmit = async function(e) {
   e.preventDefault();
 
-  const from = this.from.value;
-  const to = this.to.value;
-  const amount = parseFloat(this.amount.value);
+  console.log("DEBUG: onsubmit transferForm dijalankan");
+  console.trace("DEBUG: stack trace onsubmit");
 
+
+  const from = this.from.value?.trim();
+  const to = this.to.value?.trim();
+  const amount = Number(this.amount.value.replace(/\D/g, "")); // angka murni
+
+  if (!from || !to) {
+    alert("Semua field transfer wajib diisi (Dari & Ke).");
+    return;
+  }
   if (from === to) {
     alert("Sumber dana asal dan tujuan tidak boleh sama!");
+    return;
+  }
+  if (!Number.isFinite(amount) || amount <= 0) {
+    alert("Jumlah transfer harus angka > 0.");
     return;
   }
 
@@ -1407,7 +1456,7 @@ document.getElementById("transferPopupClose").onclick = () => {
 let balanceData = {}; // untuk menyimpan saldo per metode
 
 async function loadData() {
-  const res = await fetch('https://script.google.com/macros/s/AKfycbyDL9wt6-HzHwUoXepDH-91tiwtoPDh1WvmMxk2NfLLiPXgnUAt2TEvcFl-R1zvqn0bhg/exec');
+  const res = await fetch('https://script.google.com/macros/s/AKfycbyh_WfkgN-Qa0t447u_bU6mwDKiPqbtQkapJOyHKeuTT4loYvLJ7MY5RMzNXpCK20ED7g/exec');
   const data = await res.json();
 
   // Simpan saldo per metode ke variabel global
@@ -1488,6 +1537,7 @@ function populateSelectOptions(options) {
   document.getElementById("saldoFrom").textContent = "Saldo: -";
   document.getElementById("saldoTo").textContent = "Saldo: -";
 }
+
 </script>
 </body>
 </html>
